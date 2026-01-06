@@ -1,0 +1,138 @@
+ <!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>WebScrapper • Auth Portal</title>
+
+    <link rel="stylesheet" th:href="@{/ui/app.css(v=${#dates.createNow().time})}" href="/ui/app.css" />
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <div class="brand">
+            <h1>WebScrapper Auth Portal</h1>
+            <p>One page. Three flows. OTP-powered onboarding.</p>
+        </div>
+
+        <div class="statusbar" role="status" aria-live="polite">
+            <div class="pill"><span id="apiDot" class="dot warn"></span><span id="apiText">Service: checking…</span></div>
+            <div class="pill">Server: <strong>localhost:9000</strong></div>
+        </div>
+    </header>
+
+    <div class="grid">
+        <section class="panel" aria-label="Authentication">
+            <div class="head">
+                <h2>Identity</h2>
+                <div class="pill">OTP expires in <strong>5 minutes</strong></div>
+            </div>
+            <div class="body">
+                <div class="tabs" role="tablist" aria-label="Auth modes">
+                    <button class="tab" id="tabSignup" role="tab" aria-selected="true" aria-controls="paneSignup">Sign up</button>
+                    <button class="tab" id="tabLogin" role="tab" aria-selected="false" aria-controls="paneLogin">Login</button>
+                    <button class="tab" id="tabForgot" role="tab" aria-selected="false" aria-controls="paneForgot">Forgot</button>
+                </div>
+
+                <div id="paneSignup" role="tabpanel" aria-labelledby="tabSignup">
+                    <form class="form" id="signupForm">
+                        <div class="row">
+                            <label>
+                                Email
+                                <input id="signupEmail" type="email" autocomplete="email" required placeholder="you@example.com"/>
+                            </label>
+                            <label>
+                                Password
+                                <input id="signupPassword" type="password" autocomplete="new-password" required placeholder="Create a password"/>
+                            </label>
+                        </div>
+                        <div class="row">
+                            <label>
+                                OTP
+                                <input id="signupOtp" type="text" inputmode="numeric" autocomplete="one-time-code" required placeholder="6-digit OTP"/>
+                            </label>
+                            <label>
+                                Quick action
+                                <div class="btnrow">
+                                    <button type="button" id="signupSendOtpBtn">Send OTP</button>
+                                    <button type="submit" class="primary">Create account</button>
+                                </div>
+                            </label>
+                        </div>
+                        <div id="signupMsg" class="msg" hidden></div>
+                    </form>
+                </div>
+
+                <div id="paneLogin" role="tabpanel" aria-labelledby="tabLogin" hidden>
+                    <form class="form" id="loginForm">
+                        <div class="row">
+                            <label>
+                                Email
+                                <input id="loginEmail" type="email" autocomplete="email" required placeholder="you@example.com"/>
+                            </label>
+                            <label>
+                                Password
+                                <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Your password"/>
+                            </label>
+                        </div>
+                        <div class="btnrow">
+                            <button type="submit" class="primary">Sign in</button>
+                        </div>
+                        <div id="loginMsg" class="msg" hidden></div>
+                    </form>
+                </div>
+
+                <div id="paneForgot" role="tabpanel" aria-labelledby="tabForgot" hidden>
+                    <form class="form" id="forgotForm">
+                        <div class="row">
+                            <label>
+                                Email
+                                <input id="forgotEmail" type="email" autocomplete="email" required placeholder="you@example.com"/>
+                            </label>
+                            <label>
+                                New password
+                                <input id="forgotNewPassword" type="password" autocomplete="new-password" required placeholder="Set a new password"/>
+                            </label>
+                        </div>
+                        <div class="row">
+                            <label>
+                                OTP
+                                <input id="forgotOtp" type="text" inputmode="numeric" autocomplete="one-time-code" required placeholder="6-digit OTP"/>
+                            </label>
+                            <label>
+                                Quick action
+                                <div class="btnrow">
+                                    <button type="button" id="forgotSendOtpBtn">Send OTP</button>
+                                    <button type="submit" class="primary">Reset password</button>
+                                </div>
+                            </label>
+                        </div>
+                        <div id="forgotMsg" class="msg" hidden></div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <aside class="side" aria-label="Session">
+            <section class="panel">
+                <div class="head">
+                    <h2>Session</h2>
+                    <div class="pill">This device</div>
+                </div>
+                <div class="body">
+                    <div class="kv">
+                        <div><strong>Status:</strong> <span id="sessionState">Signed out</span></div>
+                        <div class="hint">After you sign in, you’ll stay signed in on this device until you sign out.</div>
+                    </div>
+                    <div class="btnrow">
+                        <button type="button" id="signOutBtn" disabled>Sign out</button>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>
+
+<script th:src="@{/ui/app.js(v=${#dates.createNow().time})}" src="/ui/app.js" defer></script>
+</body>
+</html>
