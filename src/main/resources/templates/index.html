@@ -21,8 +21,8 @@
         </div>
     </header>
 
-    <div class="grid">
-        <section class="panel" aria-label="Authentication">
+    <div class="grid single">
+        <section class="panel" id="authPanel" aria-label="Authentication">
             <div class="head">
                 <h2>Identity</h2>
                 <div class="pill">OTP expires in <strong>5 minutes</strong></div>
@@ -112,24 +112,6 @@
                 </div>
             </div>
         </section>
-
-        <aside class="side" aria-label="Session">
-            <section class="panel">
-                <div class="head">
-                    <h2>Session</h2>
-                    <div class="pill">This device</div>
-                </div>
-                <div class="body">
-                    <div class="kv">
-                        <div><strong>Status:</strong> <span id="sessionState">Signed out</span></div>
-                        <div class="hint">After you sign in, you’ll stay signed in on this device until you sign out.</div>
-                    </div>
-                    <div class="btnrow">
-                        <button type="button" id="signOutBtn" disabled>Sign out</button>
-                    </div>
-                </div>
-            </section>
-        </aside>
     </div>
 </div>
 

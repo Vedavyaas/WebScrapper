@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>WebScrapper • Account</title>
+
+    <link rel="stylesheet" th:href="@{/ui/app.css(v=${#dates.createNow().time})}" href="/ui/app.css" />
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <div class="brand">
+            <h1>WebScrapper</h1>
+            <p>Account</p>
+        </div>
+
+        <nav class="topnav" aria-label="Primary">
+            <a class="navlink" href="/ui/dashboard">Dashboard</a>
+            <a class="navlink" href="/ui/account" aria-current="page">Account</a>
+        </nav>
+
+        <div class="statusbar" role="status" aria-live="polite">
+            <div class="pill"><span id="apiDot" class="dot warn"></span><span id="apiText">Service: checking…</span></div>
+            <div class="pill">Server: <strong>localhost:9000</strong></div>
+        </div>
+    </header>
+
+    <div class="grid">
+        <section class="panel" aria-label="Account">
+            <div class="head">
+                <h2>Change Password</h2>
+                <div class="pill">OTP based</div>
+            </div>
+            <div class="body">
+                <form class="form" id="changePwdForm">
+                    <div class="row">
+                        <label>
+                            Email
+                            <input id="changePwdEmail" type="email" autocomplete="email" readonly />
+                        </label>
+                        <label>
+                            OTP
+                            <input id="changePwdOtp" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit OTP" required />
+                        </label>
+                    </div>
+                    <div class="row">
+                        <label>
+                            New password
+                            <input id="changePwdNewPassword" type="password" autocomplete="new-password" placeholder="Set a new password" required />
+                        </label>
+                        <label>
+                            Quick action
+                            <div class="btnrow">
+                                <button type="button" id="changePwdSendOtpBtn">Send OTP</button>
+                                <button type="submit" class="primary" id="changePwdSubmitBtn">Update password</button>
+                            </div>
+                        </label>
+                    </div>
+                    <div id="changePwdMsg" class="msg" hidden></div>
+                </form>
+            </div>
+        </section>
+
+        <aside class="side" aria-label="Session">
+            <section class="panel">
+                <div class="head">
+                    <h2>Session</h2>
+                    <div class="pill">This device</div>
+                </div>
+                <div class="body">
+                    <div class="kv">
+                        <div><strong>Status:</strong> <span id="sessionState">Signed out</span></div>
+                        <div class="hint">If you signed out, sign in again on the Login page.</div>
+                    </div>
+                    <div class="btnrow">
+                        <button type="button" id="signOutBtn" disabled>Sign out</button>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>
+
+<script th:src="@{/ui/app.js(v=${#dates.createNow().time})}" src="/ui/app.js" defer></script>
+</body>
+</html>

@@ -22,6 +22,55 @@
         forgotPassword: async (email, otp, newPassword) => {
             const url = `/forget/password?email=${encodeURIComponent(email)}&OTP=${encodeURIComponent(otp)}&newPassword=${encodeURIComponent(newPassword)}`;
             return fetch(url, { method: 'PUT' });
+        },
+
+        addScrap: async (token, url, targetPrice) => {
+            const endpoint = `/post/url?url=${encodeURIComponent(url)}&targetPrice=${encodeURIComponent(String(targetPrice))}`;
+            return fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
+        },
+
+        listScraps: async (token) => {
+            return fetch('/get/url', {
+                method: 'GET',
+                headers: {
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
+        },
+
+        changeScrapUrl: async (token, id, url) => {
+            const endpoint = `/change/url?url=${encodeURIComponent(url)}&id=${encodeURIComponent(String(id))}`;
+            return fetch(endpoint, {
+                method: 'PUT',
+                headers: {
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
+        },
+
+        changeScrapPrice: async (token, id, newPrice) => {
+            const endpoint = `/change/price?newPrice=${encodeURIComponent(String(newPrice))}&id=${encodeURIComponent(String(id))}`;
+            return fetch(endpoint, {
+                method: 'PUT',
+                headers: {
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
+        },
+
+        deleteScrap: async (token, id) => {
+            const endpoint = `/delete/scrap?id=${encodeURIComponent(String(id))}`;
+            return fetch(endpoint, {
+                method: 'DELETE',
+                headers: {
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
         }
     };
 
@@ -31,15 +80,19 @@
         return node;
     };
 
+    const maybeEl = (id) => document.getElementById(id);
+
     function setMsg(targetId, text, tone) {
-        const node = el(targetId);
+        const node = maybeEl(targetId);
+        if (!node) return;
         node.hidden = false;
         node.className = `msg ${tone || ''}`.trim();
         node.textContent = text;
     }
 
     function clearMsg(targetId) {
-        const node = el(targetId);
+        const node = maybeEl(targetId);
+        if (!node) return;
         node.hidden = true;
         node.textContent = '';
         node.className = 'msg';
@@ -53,8 +106,114 @@
         }
 
         const hasToken = Boolean(localStorage.getItem('jwt'));
-        el('sessionState').textContent = hasToken ? 'Signed in' : 'Signed out';
-        el('signOutBtn').disabled = !hasToken;
+        const sessionState = maybeEl('sessionState');
+        if (sessionState) sessionState.textContent = hasToken ? 'Signed in' : 'Signed out';
+
+        const signOutBtn = maybeEl('signOutBtn');
+        if (signOutBtn) signOutBtn.disabled = !hasToken;
+
+        // Populate signed-in email on dashboard (best-effort)
+        const emailInput = document.getElementById('changePwdEmail');
+        if (emailInput) {
+            emailInput.value = hasToken ? (getJwtSubject(localStorage.getItem('jwt')) || '') : '';
+        }
+    }
+
+    function currentToken() {
+        return localStorage.getItem('jwt');
+    }
+
+    function base64UrlToString(input) {
+        if (!input) return '';
+        const b64 = input.replace(/-/g, '+').replace(/_/g, '/');
+        const padLen = (4 - (b64.length % 4)) % 4;
+        const padded = b64 + '='.repeat(padLen);
+        try {
+            return atob(padded);
+        } catch {
+            return '';
+        }
+    }
+
+    function getJwtSubject(jwt) {
+        if (!jwt || typeof jwt !== 'string') return null;
+        const parts = jwt.split('.');
+        if (parts.length < 2) return null;
+        try {
+            const payloadJson = base64UrlToString(parts[1]);
+            const payload = JSON.parse(payloadJson);
+            return typeof payload?.sub === 'string' ? payload.sub : null;
+        } catch {
+            return null;
+        }
+    }
+
+    function normalizeNumber(value) {
+        if (value === null || value === undefined) return null;
+        const num = Number(value);
+        return Number.isFinite(num) ? num : null;
+    }
+
+    function renderScrapList(items) {
+        const host = document.getElementById('scrapList');
+        if (!host) return;
+        host.innerHTML = '';
+
+        if (!Array.isArray(items) || items.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'msg';
+            empty.textContent = 'No items yet. Add a product URL and target price.';
+            host.appendChild(empty);
+            return;
+        }
+
+        for (const item of items) {
+            const card = document.createElement('div');
+            card.className = 'item';
+
+            const link = document.createElement('a');
+            link.href = item.url || '#';
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.textContent = item.url || '(no url)';
+            card.appendChild(link);
+
+            const meta = document.createElement('div');
+            meta.className = 'meta';
+            const id = document.createElement('span');
+            id.textContent = `ID: ${item.id ?? '-'}`;
+            const price = document.createElement('span');
+            price.textContent = `Target: ${item.targetPrice ?? '-'}`;
+            meta.appendChild(id);
+            meta.appendChild(price);
+            card.appendChild(meta);
+
+            host.appendChild(card);
+        }
+    }
+
+    async function loadScraps() {
+        const token = currentToken();
+        if (!token) return;
+
+        const msgId = 'dashMsg';
+        try {
+            const res = await api.listScraps(token);
+            const body = await readTextOrJson(res);
+
+            if (!res.ok) {
+                const text = typeof body === 'string' ? body : JSON.stringify(body);
+                setMsg(msgId, `Failed to load watchlist (${res.status}).\n${text || ''}`, 'bad');
+                renderScrapList([]);
+                return;
+            }
+
+            clearMsg(msgId);
+            renderScrapList(body);
+        } catch (e) {
+            setMsg(msgId, `Network error: ${e?.message || e}`, 'bad');
+            renderScrapList([]);
+        }
     }
 
     function activateTab(tabId) {
@@ -124,11 +283,15 @@
         try {
             const res = await fetch('/actuator/health', { method: 'GET' });
             if (!res.ok) throw new Error('not ok');
-            el('apiDot').className = 'dot good';
-            el('apiText').textContent = 'Service: online';
+            const apiDot = maybeEl('apiDot');
+            const apiText = maybeEl('apiText');
+            if (apiDot) apiDot.className = 'dot good';
+            if (apiText) apiText.textContent = 'Service: online';
         } catch {
-            el('apiDot').className = 'dot warn';
-            el('apiText').textContent = 'Service: unknown';
+            const apiDot = maybeEl('apiDot');
+            const apiText = maybeEl('apiText');
+            if (apiDot) apiDot.className = 'dot warn';
+            if (apiText) apiText.textContent = 'Service: unknown';
         }
     }
 
@@ -139,17 +302,22 @@
         button.textContent = isBusy ? (busyText || 'Working…') : button.dataset.origText;
     }
 
-    // Tabs + routing
-    el('tabSignup').addEventListener('click', () => setRoute('tabSignup'));
-    el('tabLogin').addEventListener('click', () => setRoute('tabLogin'));
-    el('tabForgot').addEventListener('click', () => setRoute('tabForgot'));
+    // Tabs + routing (login page only)
+    const tabSignup = maybeEl('tabSignup');
+    const tabLogin = maybeEl('tabLogin');
+    const tabForgot = maybeEl('tabForgot');
+    if (tabSignup && tabLogin && tabForgot) {
+        tabSignup.addEventListener('click', () => setRoute('tabSignup'));
+        tabLogin.addEventListener('click', () => setRoute('tabLogin'));
+        tabForgot.addEventListener('click', () => setRoute('tabForgot'));
 
-    window.addEventListener('hashchange', () => {
-        activateTab(hashToTabId(location.hash));
-    });
+        window.addEventListener('hashchange', () => {
+            activateTab(hashToTabId(location.hash));
+        });
+    }
 
     // OTP cooldown (client-side hint only)
-    const cooldown = { signup: 0, forgot: 0 };
+    const cooldown = { signup: 0, forgot: 0, change: 0 };
     function startCooldown(kind, btnId) {
         cooldown[kind] = 30;
         const btn = el(btnId);
@@ -169,8 +337,8 @@
     }
 
     // Signup send OTP
-    const signupSendOtpBtn = el('signupSendOtpBtn');
-    signupSendOtpBtn.addEventListener('click', async () => {
+    const signupSendOtpBtn = maybeEl('signupSendOtpBtn');
+    if (signupSendOtpBtn) signupSendOtpBtn.addEventListener('click', async () => {
         clearMsg('signupMsg');
         const email = el('signupEmail').value.trim();
         if (!email) {
@@ -198,8 +366,8 @@
     });
 
     // Signup create account
-    const signupForm = el('signupForm');
-    signupForm.addEventListener('submit', async (ev) => {
+    const signupForm = maybeEl('signupForm');
+    if (signupForm) signupForm.addEventListener('submit', async (ev) => {
         ev.preventDefault();
         clearMsg('signupMsg');
 
@@ -236,8 +404,8 @@
     });
 
     // Login
-    const loginForm = el('loginForm');
-    loginForm.addEventListener('submit', async (ev) => {
+    const loginForm = maybeEl('loginForm');
+    if (loginForm) loginForm.addEventListener('submit', async (ev) => {
         ev.preventDefault();
         clearMsg('loginMsg');
 
@@ -269,6 +437,7 @@
 
             setToken(token);
             setMsg('loginMsg', 'Signed in successfully.', 'good');
+            window.location.href = '/ui/dashboard';
         } catch (e) {
             setMsg('loginMsg', `Network error: ${e?.message || e}`, 'bad');
         } finally {
@@ -276,16 +445,259 @@
         }
     });
 
-    el('signOutBtn').addEventListener('click', () => {
+    const signOutBtn = maybeEl('signOutBtn');
+    if (signOutBtn) signOutBtn.addEventListener('click', () => {
         clearMsg('loginMsg');
+        clearMsg('dashMsg');
+        clearMsg('changePwdMsg');
         setToken(null);
-        setMsg('loginMsg', 'Signed out.', 'good');
-        setRoute('tabLogin');
+        window.location.href = '/';
     });
 
+    function ensureSignedInOrRedirect() {
+        const token = currentToken();
+        if (!token) {
+            window.location.href = '/';
+            return false;
+        }
+        return true;
+    }
+
+    // Dashboard actions
+    const addScrapForm = document.getElementById('addScrapForm');
+    if (addScrapForm) {
+        if (!ensureSignedInOrRedirect()) return;
+        addScrapForm.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            clearMsg('dashMsg');
+            const token = currentToken();
+            if (!token) {
+                setMsg('dashMsg', 'Please sign in first.', 'warn');
+                return;
+            }
+
+            const url = (document.getElementById('scrapUrl')?.value || '').trim();
+            const targetPrice = normalizeNumber(document.getElementById('scrapTargetPrice')?.value);
+            if (!url || targetPrice === null) {
+                setMsg('dashMsg', 'Enter a valid URL and target price.', 'warn');
+                return;
+            }
+
+            const btn = document.getElementById('addScrapBtn');
+            setBusy(btn, true, 'Adding…');
+            try {
+                const res = await api.addScrap(token, url, targetPrice);
+                const body = await readTextOrJson(res);
+                const text = typeof body === 'string' ? body : JSON.stringify(body);
+
+                if (!res.ok) {
+                    setMsg('dashMsg', `Add failed (${res.status}).\n${text || ''}`, 'bad');
+                    return;
+                }
+
+                setMsg('dashMsg', text || 'Added.', 'good');
+                document.getElementById('scrapUrl').value = '';
+                document.getElementById('scrapTargetPrice').value = '';
+                await loadScraps();
+            } catch (e) {
+                setMsg('dashMsg', `Network error: ${e?.message || e}`, 'bad');
+            } finally {
+                setBusy(btn, false);
+            }
+        });
+    }
+
+    const refreshBtn = document.getElementById('refreshScrapsBtn');
+    if (refreshBtn) refreshBtn.addEventListener('click', () => loadScraps());
+
+    const updateUrlForm = document.getElementById('updateUrlForm');
+    if (updateUrlForm) {
+        if (!ensureSignedInOrRedirect()) return;
+        updateUrlForm.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            clearMsg('dashMsg');
+            const token = currentToken();
+            if (!token) {
+                setMsg('dashMsg', 'Please sign in first.', 'warn');
+                return;
+            }
+
+            const id = normalizeNumber(document.getElementById('updateUrlId')?.value);
+            const url = (document.getElementById('updateUrlValue')?.value || '').trim();
+            if (!id || !url) {
+                setMsg('dashMsg', 'Enter a valid ID and URL.', 'warn');
+                return;
+            }
+
+            try {
+                const res = await api.changeScrapUrl(token, id, url);
+                const body = await readTextOrJson(res);
+                const text = typeof body === 'string' ? body : JSON.stringify(body);
+                if (!res.ok) {
+                    setMsg('dashMsg', `Change URL failed (${res.status}).\n${text || ''}`, 'bad');
+                    return;
+                }
+                setMsg('dashMsg', text || 'URL updated.', 'good');
+                await loadScraps();
+            } catch (e) {
+                setMsg('dashMsg', `Network error: ${e?.message || e}`, 'bad');
+            }
+        });
+    }
+
+    const updatePriceForm = document.getElementById('updatePriceForm');
+    if (updatePriceForm) {
+        if (!ensureSignedInOrRedirect()) return;
+        updatePriceForm.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            clearMsg('dashMsg');
+            const token = currentToken();
+            if (!token) {
+                setMsg('dashMsg', 'Please sign in first.', 'warn');
+                return;
+            }
+
+            const id = normalizeNumber(document.getElementById('updatePriceId')?.value);
+            const price = normalizeNumber(document.getElementById('updatePriceValue')?.value);
+            if (!id || price === null) {
+                setMsg('dashMsg', 'Enter a valid ID and price.', 'warn');
+                return;
+            }
+
+            try {
+                const res = await api.changeScrapPrice(token, id, price);
+                const body = await readTextOrJson(res);
+                const text = typeof body === 'string' ? body : JSON.stringify(body);
+                if (!res.ok) {
+                    setMsg('dashMsg', `Change price failed (${res.status}).\n${text || ''}`, 'bad');
+                    return;
+                }
+                setMsg('dashMsg', text || 'Price updated.', 'good');
+                await loadScraps();
+            } catch (e) {
+                setMsg('dashMsg', `Network error: ${e?.message || e}`, 'bad');
+            }
+        });
+    }
+
+    const deleteForm = document.getElementById('deleteScrapForm');
+    if (deleteForm) {
+        if (!ensureSignedInOrRedirect()) return;
+        deleteForm.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            clearMsg('dashMsg');
+            const token = currentToken();
+            if (!token) {
+                setMsg('dashMsg', 'Please sign in first.', 'warn');
+                return;
+            }
+
+            const id = normalizeNumber(document.getElementById('deleteScrapId')?.value);
+            if (!id) {
+                setMsg('dashMsg', 'Enter a valid ID.', 'warn');
+                return;
+            }
+
+            try {
+                const res = await api.deleteScrap(token, id);
+                const body = await readTextOrJson(res);
+                const text = typeof body === 'string' ? body : JSON.stringify(body);
+                if (!res.ok) {
+                    setMsg('dashMsg', `Delete failed (${res.status}).\n${text || ''}`, 'bad');
+                    return;
+                }
+                setMsg('dashMsg', text || 'Deleted.', 'good');
+                await loadScraps();
+            } catch (e) {
+                setMsg('dashMsg', `Network error: ${e?.message || e}`, 'bad');
+            }
+        });
+    }
+
+    // Change password (OTP-based) inside dashboard
+    const changePwdSendOtpBtn = document.getElementById('changePwdSendOtpBtn');
+    if (changePwdSendOtpBtn) {
+        if (!ensureSignedInOrRedirect()) return;
+        changePwdSendOtpBtn.addEventListener('click', async () => {
+            clearMsg('changePwdMsg');
+            const token = currentToken();
+            if (!token) {
+                setMsg('changePwdMsg', 'Please sign in first.', 'warn');
+                return;
+            }
+
+            const email = (document.getElementById('changePwdEmail')?.value || '').trim();
+            if (!email) {
+                setMsg('changePwdMsg', 'Could not determine your email from the session. Please sign out and sign in again.', 'warn');
+                return;
+            }
+
+            setBusy(changePwdSendOtpBtn, true, 'Sending…');
+            try {
+                const res = await api.sendOtp(email);
+                const body = await readTextOrJson(res);
+                const text = typeof body === 'string' ? body : JSON.stringify(body);
+                if (!res.ok) {
+                    setMsg('changePwdMsg', `OTP request failed (${res.status}).\n${text || ''}`, 'bad');
+                    return;
+                }
+                setMsg('changePwdMsg', text || 'OTP request sent.', 'good');
+                startCooldown('change', 'changePwdSendOtpBtn');
+                document.getElementById('changePwdOtp')?.focus();
+            } catch (e) {
+                setMsg('changePwdMsg', `Network error: ${e?.message || e}`, 'bad');
+            } finally {
+                if (cooldown.change <= 0) setBusy(changePwdSendOtpBtn, false);
+            }
+        });
+    }
+
+    const changePwdForm = document.getElementById('changePwdForm');
+    if (changePwdForm) {
+        if (!ensureSignedInOrRedirect()) return;
+        changePwdForm.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            clearMsg('changePwdMsg');
+            const token = currentToken();
+            if (!token) {
+                setMsg('changePwdMsg', 'Please sign in first.', 'warn');
+                return;
+            }
+
+            const email = (document.getElementById('changePwdEmail')?.value || '').trim();
+            const otp = (document.getElementById('changePwdOtp')?.value || '').trim();
+            const newPassword = document.getElementById('changePwdNewPassword')?.value || '';
+            if (!email || !otp || !newPassword) {
+                setMsg('changePwdMsg', 'Fill OTP and new password.', 'warn');
+                return;
+            }
+
+            const submitBtn = document.getElementById('changePwdSubmitBtn');
+            setBusy(submitBtn, true, 'Updating…');
+            try {
+                const res = await api.forgotPassword(email, otp, newPassword);
+                const body = await readTextOrJson(res);
+                const text = typeof body === 'string' ? body : JSON.stringify(body);
+
+                if (!res.ok) {
+                    setMsg('changePwdMsg', `Update failed (${res.status}).\n${text || ''}`, 'bad');
+                    return;
+                }
+
+                setMsg('changePwdMsg', text || 'Password updated.', 'good');
+                document.getElementById('changePwdOtp').value = '';
+                document.getElementById('changePwdNewPassword').value = '';
+            } catch (e) {
+                setMsg('changePwdMsg', `Network error: ${e?.message || e}`, 'bad');
+            } finally {
+                setBusy(submitBtn, false);
+            }
+        });
+    }
+
     // Forgot send OTP
-    const forgotSendOtpBtn = el('forgotSendOtpBtn');
-    forgotSendOtpBtn.addEventListener('click', async () => {
+    const forgotSendOtpBtn = maybeEl('forgotSendOtpBtn');
+    if (forgotSendOtpBtn) forgotSendOtpBtn.addEventListener('click', async () => {
         clearMsg('forgotMsg');
         const email = el('forgotEmail').value.trim();
         if (!email) {
@@ -313,8 +725,8 @@
     });
 
     // Forgot reset password
-    const forgotForm = el('forgotForm');
-    forgotForm.addEventListener('submit', async (ev) => {
+    const forgotForm = maybeEl('forgotForm');
+    if (forgotForm) forgotForm.addEventListener('submit', async (ev) => {
         ev.preventDefault();
         clearMsg('forgotMsg');
 
@@ -352,6 +764,17 @@
 
     // Init
     setToken(localStorage.getItem('jwt'));
-    setRoute(hashToTabId(location.hash), { replace: true });
+    if (tabSignup && tabLogin && tabForgot) {
+        setRoute(hashToTabId(location.hash), { replace: true });
+    }
     apiHealthCheck();
+
+    // Hard gate: dashboard/account pages should never be usable when signed out
+    if (document.getElementById('scrapList') || document.getElementById('changePwdForm')) {
+        if (!ensureSignedInOrRedirect()) return;
+    }
+
+    if (document.getElementById('scrapList')) {
+        loadScraps();
+    }
 })();

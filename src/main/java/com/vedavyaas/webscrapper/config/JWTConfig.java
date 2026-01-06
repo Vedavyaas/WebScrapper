@@ -6,7 +6,6 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.vedavyaas.webscrapper.service.UserDetailService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -38,13 +37,20 @@ public class JWTConfig {
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(authorizeRequests -> authorizeRequests
                 .requestMatchers(
+                "/",
+                "/ui",
+                "/ui/dashboard",
+                "/ui/account",
+                "/ui/app.css",
+                "/ui/app.js",
+                "/actuator/health",
                         "/h2-console/**",
                         "/create/account/**",
                         "/forget/password/**",
                         "/get/OTP/**",
                         "/authenticate/**"
                 ).permitAll()
-                .anyRequest().permitAll());
+            .anyRequest().authenticated());
         http.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
         http.csrf(AbstractHttpConfigurer::disable);
         http.headers(header -> header.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable));

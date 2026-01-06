@@ -10,4 +10,14 @@ public class UiController {
     public String index() {
         return "index";
     }
+
+    @GetMapping("/ui/dashboard")
+    public String dashboard() {
+        return "dashboard";
+    }
+
+    @GetMapping("/ui/account")
+    public String account() {
+        return "account";
+    }
 }

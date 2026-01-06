@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>WebScrapper • Dashboard</title>
+
+    <link rel="stylesheet" th:href="@{/ui/app.css(v=${#dates.createNow().time})}" href="/ui/app.css" />
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <div class="brand">
+            <h1>WebScrapper</h1>
+            <p>Dashboard</p>
+        </div>
+
+        <nav class="topnav" aria-label="Primary">
+            <a class="navlink" href="/ui/dashboard" aria-current="page">Dashboard</a>
+            <a class="navlink" href="/ui/account">Account</a>
+        </nav>
+
+        <div class="statusbar" role="status" aria-live="polite">
+            <div class="pill"><span id="apiDot" class="dot warn"></span><span id="apiText">Service: checking…</span></div>
+            <div class="pill">Server: <strong>localhost:9000</strong></div>
+        </div>
+    </header>
+
+    <div class="grid">
+        <section class="panel" aria-label="Dashboard">
+            <div class="head">
+                <h2>Watchlist</h2>
+                <div class="pill">Signed-in required</div>
+            </div>
+            <div class="body">
+                <form class="form" id="addScrapForm">
+                    <div class="row">
+                        <label>
+                            Product URL
+                            <input id="scrapUrl" type="url" placeholder="https://example.com/product" required />
+                        </label>
+                        <label>
+                            Target price
+                            <input id="scrapTargetPrice" type="number" inputmode="decimal" step="0.01" min="0" placeholder="999.00" required />
+                        </label>
+                    </div>
+                    <div class="btnrow">
+                        <button type="submit" class="primary" id="addScrapBtn">Add to watchlist</button>
+                        <button type="button" id="refreshScrapsBtn">Refresh list</button>
+                    </div>
+                    <div id="dashMsg" class="msg" hidden></div>
+                </form>
+
+                <div class="split">
+                    <div>
+                        <div class="subhead">Your watchlist</div>
+                        <div id="scrapList" class="list" aria-live="polite"></div>
+                    </div>
+
+                    <div>
+                        <div class="subhead">Update / delete</div>
+                        <form class="form" id="updateUrlForm">
+                            <div class="row">
+                                <label>
+                                    Item ID
+                                    <input id="updateUrlId" type="number" inputmode="numeric" min="1" placeholder="1" required />
+                                </label>
+                                <label>
+                                    New URL
+                                    <input id="updateUrlValue" type="url" placeholder="https://example.com/new" required />
+                                </label>
+                            </div>
+                            <div class="btnrow">
+                                <button type="submit">Change URL</button>
+                            </div>
+                        </form>
+
+                        <form class="form" id="updatePriceForm">
+                            <div class="row">
+                                <label>
+                                    Item ID
+                                    <input id="updatePriceId" type="number" inputmode="numeric" min="1" placeholder="1" required />
+                                </label>
+                                <label>
+                                    New target price
+                                    <input id="updatePriceValue" type="number" inputmode="decimal" step="0.01" min="0" placeholder="799.00" required />
+                                </label>
+                            </div>
+                            <div class="btnrow">
+                                <button type="submit">Change price</button>
+                            </div>
+                        </form>
+
+                        <form class="form" id="deleteScrapForm">
+                            <div class="row">
+                                <label>
+                                    Item ID
+                                    <input id="deleteScrapId" type="number" inputmode="numeric" min="1" placeholder="1" required />
+                                </label>
+                                <label>
+                                    Action
+                                    <div class="btnrow">
+                                        <button type="submit" class="danger">Delete</button>
+                                    </div>
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <aside class="side" aria-label="Session">
+            <section class="panel">
+                <div class="head">
+                    <h2>Session</h2>
+                    <div class="pill">This device</div>
+                </div>
+                <div class="body">
+                    <div class="kv">
+                        <div><strong>Status:</strong> <span id="sessionState">Signed out</span></div>
+                        <div class="hint">This dashboard uses the JWT stored on this device.</div>
+                    </div>
+                    <div class="btnrow">
+                        <button type="button" id="signOutBtn" disabled>Sign out</button>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>
+
+<script th:src="@{/ui/app.js(v=${#dates.createNow().time})}" src="/ui/app.js" defer></script>
+</body>
+</html>
