@@ -44,7 +44,6 @@ public class JWTConfig {
                 "/ui/app.css",
                 "/ui/app.js",
                 "/actuator/health",
-                        "/h2-console/**",
                         "/create/account/**",
                         "/forget/password/**",
                         "/get/OTP/**",

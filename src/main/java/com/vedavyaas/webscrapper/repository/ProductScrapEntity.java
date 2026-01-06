@@ -16,6 +16,7 @@ public class ProductScrapEntity {
     private String url;
     private String email;
     private BigDecimal targetPrice;
+    private BigDecimal currentPrice;
 
     public ProductScrapEntity() {
     }
@@ -56,5 +57,13 @@ public class ProductScrapEntity {
 
     public void setTargetPrice(BigDecimal targetPrice) {
         this.targetPrice = targetPrice;
+    }
+
+    public BigDecimal getCurrentPrice() {
+        return currentPrice;
+    }
+
+    public void setCurrentPrice(BigDecimal currentPrice) {
+        this.currentPrice = currentPrice;
     }
 }
