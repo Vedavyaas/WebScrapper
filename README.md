@@ -12,18 +12,26 @@ Spring Boot app that lets users track product URLs and target prices, then perio
 - Spring Security (JWT via OAuth2 Resource Server)
 - H2 (in-memory)
 - Spring Mail
-- Spring AI (Google GenAI)
+- Microsoft Playwright (Java) for headless browser scraping (Chromium)
 
 ## Features
 - Create account with OTP
 - Authenticate with username/password and receive a JWT
 - Add/list/update/delete tracked product URLs + target prices per user
-- Scheduled price check (async) using `PriceRetrievalService`
+- Scheduled price check (async) using `PriceRetrievalService` + Playwright-based `ScrapingService`
 - Basic UI pages served by Thymeleaf (`/`, `/ui/dashboard`, `/ui/account`)
+
+## Scraping (non-AI)
+Price extraction is done by rendering the product page with Playwright (headless Chromium) and then locating the first currency-looking text (e.g., `$123.45`, `€99.99`, `₹1,299`).
+
+Notes:
+- First run may download Playwright browser binaries to `~/.cache/ms-playwright` (requires internet access).
+- Some sites may block automation or render prices in ways that are not captured by the default locator.
 
 ## Local run
 ### Prerequisites
 - JDK 17+
+- Internet access on first run (Playwright browser download)
 
 ### Start
 ```bash
