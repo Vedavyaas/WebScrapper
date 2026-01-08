@@ -3,6 +3,8 @@ package com.vedavyaas.webscrapper.service;
 import com.microsoft.playwright.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -12,6 +14,7 @@ public class ScrapingService {
 
     private Playwright playwright;
     private Browser browser;
+    private final Logger logger =  LoggerFactory.getLogger(ScrapingService.class);
 
     @PostConstruct
     public void init() {
@@ -19,9 +22,9 @@ public class ScrapingService {
             playwright = Playwright.create();
             browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                     .setHeadless(true));
-            System.out.println("Playwright initialized successfully with Chromium.");
+            logger.info("Playwright initialized successfully with Chromium.");
         } catch (Exception e) {
-            System.err.println("Failed to initialize Playwright: " + e.getMessage());
+            logger.error("Failed to initialize Playwright: {}", e.getMessage());
             throw e;
         }
     }

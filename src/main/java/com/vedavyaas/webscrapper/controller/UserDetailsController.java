@@ -64,6 +64,7 @@ public class UserDetailsController {
     public String forgetPassword(@RequestParam String email, @RequestParam String OTP, @RequestParam String newPassword) {
         return userDetailsService.resetPassword(email, OTP, newPassword);
     }
+
     @GetMapping("/get/OTP")
     public String getOTP(@RequestParam String email) {
         return mailService.sendOTP(email);

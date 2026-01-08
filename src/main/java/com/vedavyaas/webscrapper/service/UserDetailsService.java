@@ -45,10 +45,6 @@ public class UserDetailsService {
         return "User not found";
     }
 
-    public String createAccount(UserDTO userDTO) {
-        return createAccount(userDTO, null);
-    }
-
     public String createAccount(UserDTO userDTO, String otp) {
         if (otp == null || otp.isBlank()) {
             return "OTP required";
