@@ -6,7 +6,6 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,7 +20,7 @@ import java.math.BigDecimal;
 @Service
 public class PriceRetrievalService {
     private final ProductScrapRepository productScrapRepository;
-    private final AIService aiService;
+    private final ScrapingService scrapingService;
 
     @Autowired
     @Lazy
@@ -29,13 +28,13 @@ public class PriceRetrievalService {
     private final Logger logger = LoggerFactory.getLogger(PriceRetrievalService.class);
     private final JavaMailSenderImpl mailSender;
 
-    public PriceRetrievalService(ProductScrapRepository productScrapRepository, AIService aiService, JavaMailSenderImpl mailSender) {
+    public PriceRetrievalService(ProductScrapRepository productScrapRepository, ScrapingService scrapingService, JavaMailSenderImpl mailSender) {
         this.productScrapRepository = productScrapRepository;
-        this.aiService = aiService;
+        this.scrapingService = scrapingService;
         this.mailSender = mailSender;
     }
 
-    @Scheduled(initialDelay = 1000, fixedRate = 600000)
+    @Scheduled(initialDelay = 1000, fixedRate = 600_000)
     public void fetchPrice() {
         Page<ProductScrapEntity> productScrapEntityPage;
         int page = 0;
@@ -54,7 +53,7 @@ public class PriceRetrievalService {
     @Transactional
     public void fetchPriceAsync(ProductScrapEntity i) {
         try {
-            BigDecimal currentPrice = aiService.calculatePrice(i.getUrl());
+            BigDecimal currentPrice = scrapingService.calculatePrice(i.getUrl());
             i.setCurrentPrice(currentPrice);
             productScrapRepository.save(i);
         } catch (Exception e) {
@@ -67,11 +66,15 @@ public class PriceRetrievalService {
         if (i.getCurrentPrice() == null) return;
         if (i.getCurrentPrice().compareTo(i.getTargetPrice()) <= 0) {
             logger.info("{} , the price of this is lower than target price", i.getUrl());
-            SimpleMailMessage mailMessage = new SimpleMailMessage();
-            mailMessage.setTo(i.getEmail());
-            mailMessage.setSubject("Price Reduced");
-            mailMessage.setText("Price is lower than your target price for this ." + i.getUrl());
-            mailSender.send(mailMessage);
+            try{
+                SimpleMailMessage mailMessage = new SimpleMailMessage();
+                mailMessage.setTo(i.getEmail());
+                mailMessage.setSubject("Price Reduced");
+                mailMessage.setText("Price is lower than your target price for this ." + i.getUrl());
+                mailSender.send(mailMessage);
+            }catch(Exception e){
+                //ignore
+            }
         }
     }
 }
